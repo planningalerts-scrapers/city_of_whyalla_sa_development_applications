@@ -215,7 +215,7 @@ function parseApplicationElements(elements: Element[], informationUrl: string) {
     if (suburbNameAndPostCode === undefined)
         suburbNameAndPostCode = suburbName.trim();
 
-    address += ((address === "") ? "" : ", ") + suburbName;
+    address += ((address === "") ? "" : ", ") + suburbNameAndPostCode;
     address = address.trim();
 
     // A valid application must at least have an application number and an address.
