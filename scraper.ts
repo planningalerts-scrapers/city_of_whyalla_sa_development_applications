@@ -335,7 +335,7 @@ async function main() {
     
     let pdfUrls: string[] = [];
     for (let element of $("td.u6ListTD a[href$='.pdf']").get()) {
-        if (/Development Register/g.test(element.attribs.href)) {  // ignores approved application PDFs and just matches lodged application PDFs
+        if (/Development Register/gi.test(element.attribs.href)) {  // ignores approved application PDFs and just matches lodged application PDFs (case insensitively)
             let pdfUrl = new urlparser.URL(element.attribs.href, DevelopmentApplicationsUrl).href;
             if (!pdfUrls.some(url => url === pdfUrl))  // avoid duplicates
                 pdfUrls.push(pdfUrl);
