@@ -20,6 +20,7 @@ const DevelopmentApplicationsUrl = "https://www.whyalla.sa.gov.au/page.aspx?u=10
 const CommentUrl = "mailto:customer.service@whyalla.sa.gov.au";
 
 declare const global: any;
+declare const process: any;
 
 // All valid suburb names.
 
@@ -241,7 +242,7 @@ async function parsePdf(url: string) {
 
     // Read the PDF.
 
-    let buffer = await request({ url: url, encoding: null });
+    let buffer = await request({ url: url, encoding: null, proxy: process.env.MORPH_PROXY });
 
     // Parse the PDF.  Each page has details of multiple  applications.
 
@@ -321,7 +322,7 @@ async function main() {
 
     console.log(`Retrieving page: ${DevelopmentApplicationsUrl}`);
 
-    let body = await request({ url: DevelopmentApplicationsUrl });
+    let body = await request({ url: DevelopmentApplicationsUrl, proxy: process.env.MORPH_PROXY });
     let $ = cheerio.load(body);
     
     let pdfUrls: string[] = [];
