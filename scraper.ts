@@ -1,4 +1,4 @@
-// Parses the development application at the South Australian City of Whyalla web site and places
+// Parses the development applications at the South Australian City of Whyalla web site and places
 // them in a database.
 //
 // Michael Bone
