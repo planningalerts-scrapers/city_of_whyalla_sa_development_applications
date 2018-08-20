@@ -16,7 +16,7 @@ import * as fs from "fs";
 
 sqlite3.verbose();
 
-const DevelopmentApplicationsUrl = "https://www.whyalla.sa.gov.au/page.aspx?u=1081";
+const DevelopmentApplicationsUrl = "http://www.whyalla.sa.gov.au/page.aspx?u=1081";
 const CommentUrl = "mailto:customer.service@whyalla.sa.gov.au";
 
 declare const global: any;
@@ -203,17 +203,25 @@ function parseApplicationElements(elements: Element[], informationUrl: string) {
 
     let address = "";
     if (houseNumber !== undefined)
-        address += houseNumber.trim();
+        address += houseNumber.replace(/Ã¼/g, " ").replace(/ü/g, " ").replace(/\s\s+/g, " ").trim();
     if (streetName !== undefined)
-        address += ((address === "") ? "" : " ") + streetName.trim();
-    if (suburbName === undefined || suburbName.trim() === "")
+        address += ((address === "") ? "" : " ") + streetName.replace(/Ã¼/g, " ").replace(/ü/g, " ").replace(/\s\s+/g, " ").trim();
+    if (suburbName === undefined || suburbName.replace(/Ã¼/g, " ").replace(/ü/g, " ").replace(/\s\s+/g, " ").trim() === "")
         address = "";  // ignore the application because there is no suburb
     
     // Attempt to add the state and post code to the suburb.
 
-    let suburbNameAndPostCode = SuburbNames[suburbName.trim()];
-    if (suburbNameAndPostCode === undefined)
-        suburbNameAndPostCode = suburbName.trim();
+    suburbName = suburbName.replace(/Ã¼/g, " ").replace(/ü/g, " ").replace(/\s\s+/g, " ").trim();
+    let suburbNameAndPostCode = SuburbNames[suburbName];
+    if (suburbNameAndPostCode === undefined) {
+        for (let knownSuburbName in SuburbNames)
+        if (knownSuburbName + " " + knownSuburbName === suburbName) {
+            suburbNameAndPostCode = SuburbNames[knownSuburbName];  // adds the state and postcode
+            break;
+        }
+        if (suburbNameAndPostCode === undefined)
+            suburbNameAndPostCode = suburbName;
+    }
 
     address += ((address === "") ? "" : ", ") + suburbNameAndPostCode;
     address = address.trim();
@@ -242,7 +250,7 @@ async function parsePdf(url: string) {
 
     // Read the PDF.
 
-    let buffer = await request({ url: url, encoding: null, proxy: process.env.MORPH_PROXY });
+    let buffer = await request({ url: url, encoding: null });
     await sleep(2000 + getRandom(0, 5) * 1000);
 
     // Parse the PDF.  Each page has details of multiple  applications.
@@ -329,7 +337,7 @@ async function main() {
 
     console.log(`Retrieving page: ${DevelopmentApplicationsUrl}`);
 
-    let body = await request({ url: DevelopmentApplicationsUrl, proxy: process.env.MORPH_PROXY });
+    let body = await request({ url: DevelopmentApplicationsUrl });
     await sleep(2000 + getRandom(0, 5) * 1000);
     let $ = cheerio.load(body);
     
