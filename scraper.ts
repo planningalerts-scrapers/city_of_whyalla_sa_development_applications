@@ -16,7 +16,7 @@ import * as fs from "fs";
 
 sqlite3.verbose();
 
-const DevelopmentApplicationsUrl = "https://www.whyalla.sa.gov.au/page.aspx?u=1081";
+const DevelopmentApplicationsUrl = "http://www.whyalla.sa.gov.au/page.aspx?u=1081";
 const CommentUrl = "mailto:customer.service@whyalla.sa.gov.au";
 
 declare const global: any;
