@@ -203,17 +203,25 @@ function parseApplicationElements(elements: Element[], informationUrl: string) {
 
     let address = "";
     if (houseNumber !== undefined)
-        address += houseNumber.trim();
+        address += houseNumber.replace(/Ã¼/g, " ").replace(/ü/g, " ").replace(/\s\s+/g, " ").trim();
     if (streetName !== undefined)
-        address += ((address === "") ? "" : " ") + streetName.trim();
-    if (suburbName === undefined || suburbName.trim() === "")
+        address += ((address === "") ? "" : " ") + streetName.replace(/Ã¼/g, " ").replace(/ü/g, " ").replace(/\s\s+/g, " ").trim();
+    if (suburbName === undefined || suburbName.replace(/Ã¼/g, " ").replace(/ü/g, " ").replace(/\s\s+/g, " ").trim() === "")
         address = "";  // ignore the application because there is no suburb
     
     // Attempt to add the state and post code to the suburb.
 
-    let suburbNameAndPostCode = SuburbNames[suburbName.trim()];
-    if (suburbNameAndPostCode === undefined)
-        suburbNameAndPostCode = suburbName.trim();
+    suburbName = suburbName.replace(/Ã¼/g, " ").replace(/ü/g, " ").replace(/\s\s+/g, " ").trim();
+    let suburbNameAndPostCode = SuburbNames[suburbName];
+    if (suburbNameAndPostCode === undefined) {
+        for (let knownSuburbName in SuburbNames)
+        if (knownSuburbName + " " + knownSuburbName === suburbName) {
+            suburbNameAndPostCode = SuburbNames[knownSuburbName];  // adds the state and postcode
+            break;
+        }
+        if (suburbNameAndPostCode === undefined)
+            suburbNameAndPostCode = suburbName;
+    }
 
     address += ((address === "") ? "" : ", ") + suburbNameAndPostCode;
     address = address.trim();
@@ -357,6 +365,8 @@ async function main() {
         selectedPdfUrls.push(pdfUrls[getRandom(1, pdfUrls.length)]);
     if (getRandom(0, 2) === 0)
         selectedPdfUrls.reverse();
+
+selectedPdfUrls = pdfUrls;
 
     for (let pdfUrl of selectedPdfUrls) {
         console.log(`Parsing document: ${pdfUrl}`);
