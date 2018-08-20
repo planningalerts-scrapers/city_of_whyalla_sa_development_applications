@@ -242,7 +242,7 @@ async function parsePdf(url: string) {
 
     // Read the PDF.
 
-    let buffer = await request({ url: url, encoding: null, proxy: process.env.MORPH_PROXY });
+    let buffer = await request({ url: url, encoding: null });
     await sleep(2000 + getRandom(0, 5) * 1000);
 
     // Parse the PDF.  Each page has details of multiple  applications.
@@ -329,7 +329,7 @@ async function main() {
 
     console.log(`Retrieving page: ${DevelopmentApplicationsUrl}`);
 
-    let body = await request({ url: DevelopmentApplicationsUrl, proxy: process.env.MORPH_PROXY });
+    let body = await request({ url: DevelopmentApplicationsUrl });
     await sleep(2000 + getRandom(0, 5) * 1000);
     let $ = cheerio.load(body);
     
