@@ -32,8 +32,12 @@ async function initializeDatabase() {
     return new Promise((resolve, reject) => {
         let database = new sqlite3.Database("data.sqlite");
         database.serialize(() => {
-            database.run("create table if not exists [data] ([council_reference] text primary key, [address] text, [description] text, [info_url] text, [comment_url] text, [date_scraped] text, [date_received] text, [on_notice_from] text, [on_notice_to] text)");
-            resolve(database);
+            database.all("PRAGMA table_info('data')", (error, rows) => {
+                if (rows.some(row => row.name === "on_notice_from"))
+                    database.run("drop table [data]");  // ensure that the on_notice_from (and on_notice_to) columns are removed
+                database.run("create table if not exists [data] ([council_reference] text primary key, [address] text, [description] text, [info_url] text, [comment_url] text, [date_scraped] text, [date_received] text)");
+                resolve(database);
+            });
         });
     });
 }
@@ -42,7 +46,7 @@ async function initializeDatabase() {
 
 async function insertRow(database, developmentApplication) {
     return new Promise((resolve, reject) => {
-        let sqlStatement = database.prepare("insert or replace into [data] values (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        let sqlStatement = database.prepare("insert or replace into [data] values (?, ?, ?, ?, ?, ?, ?)");
         sqlStatement.run([
             developmentApplication.applicationNumber,
             developmentApplication.address,
@@ -50,9 +54,7 @@ async function insertRow(database, developmentApplication) {
             developmentApplication.informationUrl,
             developmentApplication.commentUrl,
             developmentApplication.scrapeDate,
-            developmentApplication.receivedDate,
-            null,
-            null
+            developmentApplication.receivedDate
         ], function(error, row) {
             if (error) {
                 console.error(error);
