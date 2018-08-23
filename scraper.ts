@@ -42,7 +42,7 @@ async function initializeDatabase() {
 
 async function insertRow(database, developmentApplication) {
     return new Promise((resolve, reject) => {
-        let sqlStatement = database.prepare("insert or ignore into [data] values (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        let sqlStatement = database.prepare("insert or replace into [data] values (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         sqlStatement.run([
             developmentApplication.applicationNumber,
             developmentApplication.address,
@@ -191,6 +191,23 @@ function getDownText(elements: Element[], topText: string, rightText: string, bo
     return intersectingElements.map(element => element.text).join(" ").trim().replace(/\s\s+/g, " ");
 }
 
+// Removes common prefixes from descriptions such as "(PROPOSED) ".
+
+function removePrefix(description: string) {
+    if (description === undefined || description === "")
+        return description;
+    else if (description.startsWith("(PROPOSED) "))
+        return description.substring("(PROPOSED) ".length);
+    else if (description.startsWith("(APPLICATION NOT REQUIRED) "))
+        return description.substring("(APPLICATION NOT REQUIRED) ".length);
+    else if (description.startsWith("(PLANNING ONLY) "))
+        return description.substring("(PLANNING ONLY) ".length);
+    else if (description.startsWith("(PLANNING) "))
+        return description.substring("(PLANNING) ".length);
+    else        
+        return description;        
+}
+
 // Parses the details from the elements associated with a single development application.
 
 function parseApplicationElements(elements: Element[], informationUrl: string) {
@@ -231,6 +248,7 @@ function parseApplicationElements(elements: Element[], informationUrl: string) {
     if (applicationNumber === "" || address === "")
         return undefined;
 
+    description = removePrefix(description);
     let parsedReceivedDate = moment(receivedDate, "D/MM/YYYY", true);  // allows the leading zero of the day to be omitted
     return {
         applicationNumber: applicationNumber,
