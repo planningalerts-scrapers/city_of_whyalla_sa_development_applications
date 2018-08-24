@@ -16,11 +16,11 @@ import * as fs from "fs";
 
 sqlite3.verbose();
 
-const DevelopmentApplicationsUrl = "http://www.whyalla.sa.gov.au/page.aspx?u=1081";
+const DevelopmentApplicationsUrl = "https://www.whyalla.sa.gov.au/page.aspx?u=1081";
 const CommentUrl = "mailto:customer.service@whyalla.sa.gov.au";
+const MorphProxy = "http://118.127.99.93:53281";
 
 declare const global: any;
-declare const process: any;
 
 // All valid suburb names.
 
@@ -32,12 +32,8 @@ async function initializeDatabase() {
     return new Promise((resolve, reject) => {
         let database = new sqlite3.Database("data.sqlite");
         database.serialize(() => {
-            database.all("PRAGMA table_info('data')", (error, rows) => {
-                if (rows.some(row => row.name === "on_notice_from"))
-                    database.run("drop table [data]");  // ensure that the on_notice_from (and on_notice_to) columns are removed
-                database.run("create table if not exists [data] ([council_reference] text primary key, [address] text, [description] text, [info_url] text, [comment_url] text, [date_scraped] text, [date_received] text)");
-                resolve(database);
-            });
+            database.run("create table if not exists [data] ([council_reference] text primary key, [address] text, [description] text, [info_url] text, [comment_url] text, [date_scraped] text, [date_received] text)");
+            resolve(database);
         });
     });
 }
@@ -270,7 +266,7 @@ async function parsePdf(url: string) {
 
     // Read the PDF.
 
-    let buffer = await request({ url: url, encoding: null });
+    let buffer = await request({ url: url, encoding: null, proxy: MorphProxy });
     await sleep(2000 + getRandom(0, 5) * 1000);
 
     // Parse the PDF.  Each page has details of multiple  applications.
@@ -357,7 +353,7 @@ async function main() {
 
     console.log(`Retrieving page: ${DevelopmentApplicationsUrl}`);
 
-    let body = await request({ url: DevelopmentApplicationsUrl });
+    let body = await request({ url: DevelopmentApplicationsUrl, proxy: MorphProxy });
     await sleep(2000 + getRandom(0, 5) * 1000);
     let $ = cheerio.load(body);
     
