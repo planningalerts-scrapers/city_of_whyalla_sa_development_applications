@@ -264,10 +264,24 @@ function parseApplicationElements(elements: Element[], informationUrl: string) {
 async function parsePdf(url: string) {
     let developmentApplications = [];
 
-    // Read the PDF.
+    // Read the PDF ("encoding: null" indicates that binary data is expected).
 
-    let buffer = await request({ url: url, encoding: null, proxy: MorphProxy });
-    await sleep(2000 + getRandom(0, 5) * 1000);
+    let buffer = await request({
+        url: url,
+        encoding: null,
+        proxy: MorphProxy,
+        strictSSL: false,
+        headers: {
+            "Accept": "text/html, application/xhtml+xml, application/xml; q=0.9, */*; q=0.8",
+            "Accept-Encoding": "",
+            "Accept-Language": "en-US, en; q=0.5",
+            "Connection": "Keep-Alive",
+            "Host": "www.whyalla.sa.gov.au",
+            "Upgrade-Insecure-Requests": "1",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/17.17134"
+        }
+    });
+    await sleep(20000 + getRandom(0, 5) * 10000);
 
     // Parse the PDF.  Each page has details of multiple  applications.
 
@@ -353,7 +367,20 @@ async function main() {
 
     console.log(`Retrieving page: ${DevelopmentApplicationsUrl}`);
 
-    let body = await request({ url: DevelopmentApplicationsUrl, proxy: MorphProxy });
+    let body = await request({
+        url: DevelopmentApplicationsUrl,
+        proxy: MorphProxy,
+        strictSSL: false,
+        headers: {
+            "Accept": "text/html, application/xhtml+xml, application/xml; q=0.9, */*; q=0.8",
+            "Accept-Encoding": "",
+            "Accept-Language": "en-US, en; q=0.5",
+            "Connection": "Keep-Alive",
+            "Host": "www.whyalla.sa.gov.au",
+            "Upgrade-Insecure-Requests": "1",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/17.17134"
+        }
+    });
     await sleep(2000 + getRandom(0, 5) * 1000);
     let $ = cheerio.load(body);
     
