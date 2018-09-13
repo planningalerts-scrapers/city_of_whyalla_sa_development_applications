@@ -18,9 +18,9 @@ sqlite3.verbose();
 
 const DevelopmentApplicationsUrl = "https://www.whyalla.sa.gov.au/page.aspx?u=1081";
 const CommentUrl = "mailto:customer.service@whyalla.sa.gov.au";
-const MorphProxy = "http://118.127.99.93:53281";
 
 declare const global: any;
+declare const process: any;
 
 // All valid suburb names.
 
@@ -269,7 +269,7 @@ async function parsePdf(url: string) {
     let buffer = await request({
         url: url,
         encoding: null,
-        proxy: MorphProxy,
+        proxy: process.env.MORPH_PROXY,
         strictSSL: false,
         headers: {
             "Accept": "text/html, application/xhtml+xml, application/xml; q=0.9, */*; q=0.8",
@@ -369,7 +369,7 @@ async function main() {
 
     let body = await request({
         url: DevelopmentApplicationsUrl,
-        proxy: MorphProxy,
+        proxy: process.env.MORPH_PROXY,
         strictSSL: false,
         headers: {
             "Accept": "text/html, application/xhtml+xml, application/xml; q=0.9, */*; q=0.8",
