@@ -42,7 +42,7 @@ async function initializeDatabase() {
 
 async function insertRow(database, developmentApplication) {
     return new Promise((resolve, reject) => {
-        let sqlStatement = database.prepare("insert or replace into [data] values (?, ?, ?, ?, ?, ?, ?)");
+        let sqlStatement = database.prepare("insert or ignore into [data] values (?, ?, ?, ?, ?, ?, ?)");
         sqlStatement.run([
             developmentApplication.applicationNumber,
             developmentApplication.address,
