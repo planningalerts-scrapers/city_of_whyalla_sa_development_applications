@@ -229,10 +229,11 @@ function parseApplicationElements(elements: Element[], informationUrl: string) {
     suburbName = suburbName.replace(/Ã¼/g, " ").replace(/ü/g, " ").replace(/\s\s+/g, " ").trim();
     let suburbNameAndPostCode = SuburbNames[suburbName];
     if (suburbNameAndPostCode === undefined) {
-        for (let knownSuburbName in SuburbNames)
-        if (knownSuburbName + " " + knownSuburbName === suburbName) {
-            suburbNameAndPostCode = SuburbNames[knownSuburbName];  // adds the state and postcode
-            break;
+        for (let knownSuburbName in SuburbNames) {
+            if (knownSuburbName + " " + knownSuburbName === suburbName) {
+                suburbNameAndPostCode = SuburbNames[knownSuburbName];  // adds the state and postcode
+                break;
+            }
         }
         if (suburbNameAndPostCode === undefined)
             suburbNameAndPostCode = suburbName;
