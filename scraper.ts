@@ -252,7 +252,7 @@ function parseApplicationElements(elements: Element[], informationUrl: string) {
     return {
         applicationNumber: applicationNumber,
         address: address,
-        description: ((description === "") ? "NO DESCRIPTION PROVIDED" : description),
+        description: ((description !== undefined && description.trim() !== "") ? description : "NO DESCRIPTION PROVIDED"),
         informationUrl: informationUrl,
         commentUrl: CommentUrl,
         scrapeDate: moment().format("YYYY-MM-DD"),
@@ -386,11 +386,12 @@ async function main() {
     let $ = cheerio.load(body);
     
     let pdfUrls: string[] = [];
-    for (let element of $("td.u6ListTD a[href$='.pdf']").get()) {
+    for (let element of $("td.u6ListTD a").get()) {
         if (/Development Register/gi.test(element.attribs.href)) {  // ignores approved application PDFs and just matches lodged application PDFs (case insensitively)
             let pdfUrl = new urlparser.URL(element.attribs.href, DevelopmentApplicationsUrl).href;
-            if (!pdfUrls.some(url => url === pdfUrl))  // avoid duplicates
-                pdfUrls.push(pdfUrl);
+            if (pdfUrl.toLowerCase().includes(".pdf"))
+                if (!pdfUrls.some(url => url === pdfUrl))  // avoid duplicates
+                    pdfUrls.push(pdfUrl);
         }
     }
 
@@ -406,7 +407,7 @@ async function main() {
     let selectedPdfUrls: string[] = [];
     selectedPdfUrls.push(pdfUrls.shift());
     if (pdfUrls.length > 0)
-        selectedPdfUrls.push(pdfUrls[getRandom(1, pdfUrls.length)]);
+        selectedPdfUrls.push(pdfUrls[getRandom(0, pdfUrls.length)]);
     if (getRandom(0, 2) === 0)
         selectedPdfUrls.reverse();
 
