@@ -16,7 +16,8 @@ import * as fs from "fs";
 
 sqlite3.verbose();
 
-const DevelopmentApplicationsUrl = "https://www.whyalla.sa.gov.au/page.aspx?u=1081";
+const DevelopmentApplicationsUrl = "https://www.whyalla.sa.gov.au/business-and-development/public-register-of-applications";
+const DevelopmentApplicationsPreviousYearUrl = "https://www.whyalla.sa.gov.au/business-and-development/public-register-of-applications/public-register-of-applications";
 const CommentUrl = "mailto:customer.service@whyalla.sa.gov.au";
 
 declare const global: any;
@@ -42,7 +43,7 @@ async function initializeDatabase() {
 
 async function insertRow(database, developmentApplication) {
     return new Promise((resolve, reject) => {
-        let sqlStatement = database.prepare("insert or ignore into [data] values (?, ?, ?, ?, ?, ?, ?)");
+        let sqlStatement = database.prepare("insert or replace into [data] values (?, ?, ?, ?, ?, ?, ?)");
         sqlStatement.run([
             developmentApplication.applicationNumber,
             developmentApplication.address,
@@ -56,10 +57,7 @@ async function insertRow(database, developmentApplication) {
                 console.error(error);
                 reject(error);
             } else {
-                if (this.changes > 0)
-                    console.log(`    Inserted: application \"${developmentApplication.applicationNumber}\" with address \"${developmentApplication.address}\" and description \"${developmentApplication.description}\" into the database.`);
-                else
-                    console.log(`    Skipped: application \"${developmentApplication.applicationNumber}\" with address \"${developmentApplication.address}\" and description \"${developmentApplication.description}\" because it was already present in the database.`);
+                console.log(`    Saved application \"${developmentApplication.applicationNumber}\" with address \"${developmentApplication.address}\" and description \"${developmentApplication.description}\" to the database.`);
                 sqlStatement.finalize();  // releases any locks
                 resolve(row);
             }
@@ -386,8 +384,8 @@ async function main() {
     let $ = cheerio.load(body);
     
     let pdfUrls: string[] = [];
-    for (let element of $("td.u6ListTD a").get()) {
-        if (/Development Register/gi.test(element.attribs.href)) {  // ignores approved application PDFs and just matches lodged application PDFs (case insensitively)
+    for (let element of $("div.link-listing__wrap ul li a").get()) {
+        if ($(element).text().toLowerCase().includes("lodged applications")) {  // ignores approved application PDFs and just matches lodged application PDFs (case insensitively)
             let pdfUrl = new urlparser.URL(element.attribs.href, DevelopmentApplicationsUrl).href;
             if (pdfUrl.toLowerCase().includes(".pdf"))
                 if (!pdfUrls.some(url => url === pdfUrl))  // avoid duplicates
@@ -395,8 +393,40 @@ async function main() {
         }
     }
 
+    // Retrieve the previous year PDFs.
+
+    console.log(`Retrieving page: ${DevelopmentApplicationsPreviousYearUrl}`);
+
+    body = await request({
+        url: DevelopmentApplicationsPreviousYearUrl,
+        proxy: process.env.MORPH_PROXY,
+        strictSSL: false,
+        headers: {
+            "Accept": "text/html, application/xhtml+xml, application/xml; q=0.9, */*; q=0.8",
+            "Accept-Encoding": "",
+            "Accept-Language": "en-US, en; q=0.5",
+            "Connection": "Keep-Alive",
+            "Host": "www.whyalla.sa.gov.au",
+            "Upgrade-Insecure-Requests": "1",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/17.17134"
+        }
+    });
+    await sleep(2000 + getRandom(0, 5) * 1000);
+    $ = cheerio.load(body);
+    
+    for (let element of $("div.u6ListItem a").get()) {
+        if ($(element).text().toLowerCase().includes("lodged applications")) {  // ignores approved application PDFs and just matches lodged application PDFs (case insensitively)
+            let pdfUrl = new urlparser.URL(element.attribs.href, DevelopmentApplicationsUrl).href;
+            if (pdfUrl.toLowerCase().includes(".pdf"))
+                if (!pdfUrls.some(url => url === pdfUrl))  // avoid duplicates
+                    pdfUrls.push(pdfUrl);
+        }
+    }
+
+    // Check that at least one PDF was found.
+
     if (pdfUrls.length === 0) {
-        console.log("No PDF URLs were found on the page.");
+        console.log("No PDF URLs were found on the pages.");
         return;
     }
 
