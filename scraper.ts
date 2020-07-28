@@ -429,6 +429,7 @@ async function main() {
         console.log("No PDF URLs were found on the pages.");
         return;
     }
+    console.log(`Found ${pdfUrls.length} PDF(s) on the pages.`);
 
     // Select the most recent PDF.  And randomly select one other PDF (avoid processing all PDFs
     // at once because this may use too much memory, resulting in morph.io terminating the current
