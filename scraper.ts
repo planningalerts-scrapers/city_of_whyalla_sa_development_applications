@@ -389,7 +389,7 @@ async function main() {
             let pdfUrl = new urlparser.URL(element.attribs.href, DevelopmentApplicationsUrl).href;
             if (pdfUrl.toLowerCase().includes(".pdf"))
                 if (!pdfUrls.some(url => url === pdfUrl))  // avoid duplicates
-                    pdfUrls.push(pdfUrl);
+                    pdfUrls.unshift(pdfUrl);  // the most recent PDF appears last (so use "unshift" instead of "push")
         }
     }
 
