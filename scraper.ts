@@ -16,7 +16,8 @@ import * as fs from "fs";
 
 sqlite3.verbose();
 
-const DevelopmentApplicationsUrl = "https://www.whyalla.sa.gov.au/page.aspx?u=1081";
+const DevelopmentApplicationsUrl = "https://www.whyalla.sa.gov.au/business-and-development/public-register-of-applications";
+const DevelopmentApplicationsPreviousYearUrl = "https://www.whyalla.sa.gov.au/business-and-development/public-register-of-applications/public-register-of-applications";
 const CommentUrl = "mailto:customer.service@whyalla.sa.gov.au";
 
 declare const global: any;
@@ -56,7 +57,7 @@ async function insertRow(database, developmentApplication) {
                 console.error(error);
                 reject(error);
             } else {
-                console.log(`    Saved: application \"${developmentApplication.applicationNumber}\" with address \"${developmentApplication.address}\" and description \"${developmentApplication.description}\" into the database.`);
+                console.log(`    Saved application \"${developmentApplication.applicationNumber}\" with address \"${developmentApplication.address}\" and description \"${developmentApplication.description}\" to the database.`);
                 sqlStatement.finalize();  // releases any locks
                 resolve(row);
             }
@@ -226,10 +227,11 @@ function parseApplicationElements(elements: Element[], informationUrl: string) {
     suburbName = suburbName.replace(/Ã¼/g, " ").replace(/ü/g, " ").replace(/\s\s+/g, " ").trim();
     let suburbNameAndPostCode = SuburbNames[suburbName];
     if (suburbNameAndPostCode === undefined) {
-        for (let knownSuburbName in SuburbNames)
-        if (knownSuburbName + " " + knownSuburbName === suburbName) {
-            suburbNameAndPostCode = SuburbNames[knownSuburbName];  // adds the state and postcode
-            break;
+        for (let knownSuburbName in SuburbNames) {
+            if (knownSuburbName + " " + knownSuburbName === suburbName) {
+                suburbNameAndPostCode = SuburbNames[knownSuburbName];  // adds the state and postcode
+                break;
+            }
         }
         if (suburbNameAndPostCode === undefined)
             suburbNameAndPostCode = suburbName;
@@ -248,7 +250,7 @@ function parseApplicationElements(elements: Element[], informationUrl: string) {
     return {
         applicationNumber: applicationNumber,
         address: address,
-        description: ((description === "") ? "NO DESCRIPTION PROVIDED" : description),
+        description: ((description !== undefined && description.trim() !== "") ? description : "NO DESCRIPTION PROVIDED"),
         informationUrl: informationUrl,
         commentUrl: CommentUrl,
         scrapeDate: moment().format("YYYY-MM-DD"),
@@ -382,18 +384,52 @@ async function main() {
     let $ = cheerio.load(body);
     
     let pdfUrls: string[] = [];
-    for (let element of $("td.u6ListTD a[href$='.pdf']").get()) {
-        if (/Development Register/gi.test(element.attribs.href)) {  // ignores approved application PDFs and just matches lodged application PDFs (case insensitively)
+    for (let element of $("div.link-listing__wrap ul li a").get()) {
+        if ($(element).text().toLowerCase().includes("lodged applications")) {  // ignores approved application PDFs and just matches lodged application PDFs (case insensitively)
             let pdfUrl = new urlparser.URL(element.attribs.href, DevelopmentApplicationsUrl).href;
-            if (!pdfUrls.some(url => url === pdfUrl))  // avoid duplicates
-                pdfUrls.push(pdfUrl);
+            if (pdfUrl.toLowerCase().includes(".pdf"))
+                if (!pdfUrls.some(url => url === pdfUrl))  // avoid duplicates
+                    pdfUrls.unshift(pdfUrl);  // the most recent PDF appears last (so use "unshift" instead of "push")
         }
     }
 
+    // Retrieve the previous year PDFs.
+
+    console.log(`Retrieving page: ${DevelopmentApplicationsPreviousYearUrl}`);
+
+    body = await request({
+        url: DevelopmentApplicationsPreviousYearUrl,
+        proxy: process.env.MORPH_PROXY,
+        strictSSL: false,
+        headers: {
+            "Accept": "text/html, application/xhtml+xml, application/xml; q=0.9, */*; q=0.8",
+            "Accept-Encoding": "",
+            "Accept-Language": "en-US, en; q=0.5",
+            "Connection": "Keep-Alive",
+            "Host": "www.whyalla.sa.gov.au",
+            "Upgrade-Insecure-Requests": "1",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.140 Safari/537.36 Edge/17.17134"
+        }
+    });
+    await sleep(2000 + getRandom(0, 5) * 1000);
+    $ = cheerio.load(body);
+    
+    for (let element of $("div.u6ListItem a").get()) {
+        if ($(element).text().toLowerCase().includes("lodged applications")) {  // ignores approved application PDFs and just matches lodged application PDFs (case insensitively)
+            let pdfUrl = new urlparser.URL(element.attribs.href, DevelopmentApplicationsUrl).href;
+            if (pdfUrl.toLowerCase().includes(".pdf"))
+                if (!pdfUrls.some(url => url === pdfUrl))  // avoid duplicates
+                    pdfUrls.push(pdfUrl);
+        }
+    }
+
+    // Check that at least one PDF was found.
+
     if (pdfUrls.length === 0) {
-        console.log("No PDF URLs were found on the page.");
+        console.log("No PDF URLs were found on the pages.");
         return;
     }
+    console.log(`Found ${pdfUrls.length} PDF(s) on the pages.`);
 
     // Select the most recent PDF.  And randomly select one other PDF (avoid processing all PDFs
     // at once because this may use too much memory, resulting in morph.io terminating the current
@@ -402,7 +438,7 @@ async function main() {
     let selectedPdfUrls: string[] = [];
     selectedPdfUrls.push(pdfUrls.shift());
     if (pdfUrls.length > 0)
-        selectedPdfUrls.push(pdfUrls[getRandom(1, pdfUrls.length)]);
+        selectedPdfUrls.push(pdfUrls[getRandom(0, pdfUrls.length)]);
     if (getRandom(0, 2) === 0)
         selectedPdfUrls.reverse();
 
